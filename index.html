@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .trademark {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            font-size: 0.8rem;
+            font-weight: 900;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        #timer {
+            font-size: 10rem;
+            font-weight: 900;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .digit-wrapper {
+            position: relative;
+            width: 1ch;
+            height: 1.2em;
+            overflow: hidden;
+        }
+        .digit {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .colon {
+            width: 0.5ch;
+            text-align: center;
+        }
+        .burger-menu {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .burger-icon {
+            width: 30px;
+            height: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .burger-icon span {
+            width: 100%;
+            height: 2px;
+            background-color: #fff;
+            transition: all 0.3s ease;
+        }
+        .menu {
+            position: fixed;
+            bottom: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+        .menu.open {
+            right: 0;
+        }
+        button {
+            background-color: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        button:hover {
+            background-color: #fff;
+            color: #000;
+        }
+        #reset {
+            border-color: #f44336;
+            color: #f44336;
+        }
+        #reset:hover {
+            background-color: #f44336;
+            color: #000;
+        }
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .font-size-control button {
+            font-size: 1.5rem;
+            padding: 0.5rem 1rem;
+        }
+        #font-size-value {
+            font-size: 1.2rem;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+    <div class="trademark">Pomodoro Timer</div>
+    <div id="timer">
+        <div class="digit-wrapper"><div class="digit">2</div></div>
+        <div class="digit-wrapper"><div class="digit">5</div></div>
+        <span class="colon">:</span>
+        <div class="digit-wrapper"><div class="digit">0</div></div>
+        <div class="digit-wrapper"><div class="digit">0</div></div>
+    </div>
+    <div class="burger-menu">
+        <div class="burger-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="menu">
+        <button id="start">Start</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+        <div class="font-size-control">
+            <button id="decrease-font">-</button>
+            <span id="font-size-value">10rem</span>
+            <button id="increase-font">+</button>
+        </div>
+    </div>
+
+    <script>
+        let timer;
+        let timeLeft = 1500; // 25 minutes in seconds
+        const timerDisplay = document.getElementById('timer');
+        const startButton = document.getElementById('start');
+        const pauseButton = document.getElementById('pause');
+        const resetButton = document.getElementById('reset');
+        const decreaseFontButton = document.getElementById('decrease-font');
+        const increaseFontButton = document.getElementById('increase-font');
+        const fontSizeValue = document.getElementById('font-size-value');
+        const burgerMenu = document.querySelector('.burger-menu');
+        const menu = document.querySelector('.menu');
+
+        let fontSize = 10;
+
+        function formatTime(time) {
+            const minutes = Math.floor(time / 60);
+            const seconds = time % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            const newTime = formatTime(timeLeft);
+            const digitWrappers = timerDisplay.querySelectorAll('.digit-wrapper');
+            
+            newTime.split('').forEach((char, index) => {
+                if (char === ':') return; // Skip the colon
+                const wrapperIndex = index > 2 ? index - 1 : index;
+                const wrapper = digitWrappers[wrapperIndex];
+                const currentDigit = wrapper.querySelector('.digit');
+                if (currentDigit.textContent !== char) {
+                    animateDigit(wrapper, char);
+                }
+            });
+        }
+
+        function animateDigit(wrapper, newChar) {
+            const oldDigit = wrapper.querySelector('.digit');
+            const newDigit = document.createElement('div');
+            newDigit.className = 'digit';
+            newDigit.textContent = newChar;
+            newDigit.style.transform = 'translateY(-100%)';
+            wrapper.appendChild(newDigit);
+
+            anime.timeline({
+                duration: 200,
+                easing: 'easeOutCubic'
+            })
+            .add({
+                targets: oldDigit,
+                translateY: '100%',
+                opacity: 0,
+                complete: function(anim) {
+                    oldDigit.remove();
+                }
+            })
+            .add({
+                targets: newDigit,
+                translateY: ['-100%', 0],
+                opacity: [0, 1]
+            }, '-=300');
+        }
+
+        function startTimer() {
+            if (!timer) {
+                timer = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateDisplay();
+                    } else {
+                        clearInterval(timer);
+                        timer = null;
+                        alert('Pomodoro session completed!');
+                    }
+                }, 1000);
+                startButton.disabled = true;
+                pauseButton.disabled = false;
+            }
+        }
+
+        function pauseTimer() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+                startButton.disabled = false;
+                pauseButton.disabled = true;
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            timer = null;
+            timeLeft = 1500;
+            updateDisplay();
+            startButton.disabled = false;
+            pauseButton.disabled = false;
+        }
+
+        function updateFontSize(change) {
+            fontSize += change;
+            fontSize = Math.max(5, Math.min(fontSize, 20)); // Limit font size between 5rem and 20rem
+            timerDisplay.style.fontSize = `${fontSize}rem`;
+            fontSizeValue.textContent = `${fontSize}rem`;
+        }
+
+        function toggleMenu() {
+            menu.classList.toggle('open');
+            const spans = document.querySelectorAll('.burger-icon span');
+            spans.forEach(span => span.classList.toggle('open'));
+        }
+
+        startButton.addEventListener('click', startTimer);
+        pauseButton.addEventListener('click', pauseTimer);
+        resetButton.addEventListener('click', resetTimer);
+        decreaseFontButton.addEventListener('click', () => updateFontSize(-1));
+        increaseFontButton.addEventListener('click', () => updateFontSize(1));
+        burgerMenu.addEventListener('click', toggleMenu);
+
+        updateDisplay();
+    </script>
+</body>
+</html>
