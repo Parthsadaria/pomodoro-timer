@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -130,6 +131,14 @@
             font-size: 1.2rem;
             font-weight: 400;
         }
+.fullscreen-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer;
+    z-index: 1000;
+}
+
     </style>
 </head>
 <body>
@@ -158,6 +167,11 @@
             <button id="increase-font">+</button>
         </div>
     </div>
+<div class="fullscreen-button" onclick="toggleFullScreen()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H3v5m0 4v5h5M16 3h5v5m0 4v5h-5" />
+    </svg>
+</div>
 
     <script>
         let timer;
@@ -269,6 +283,17 @@
             const spans = document.querySelectorAll('.burger-icon span');
             spans.forEach(span => span.classList.toggle('open'));
         }
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
 
         startButton.addEventListener('click', startTimer);
         pauseButton.addEventListener('click', pauseTimer);
