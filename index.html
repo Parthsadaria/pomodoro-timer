@@ -259,7 +259,7 @@
 
         function updateFontSize(change) {
             fontSize += change;
-            fontSize = Math.max(5, Math.min(fontSize, 20)); // Limit font size between 5rem and 20rem
+            fontSize = Math.max(3, Math.min(fontSize, 100)); // Limit font size between 5rem and 20rem
             timerDisplay.style.fontSize = `${fontSize}rem`;
             fontSizeValue.textContent = `${fontSize}rem`;
         }
