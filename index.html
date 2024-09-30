@@ -295,6 +295,34 @@ function toggleFullScreen() {
     }
 }
 
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('Wake Lock is active.');
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+async function releaseWakeLock() {
+    if (wakeLock !== null) {
+        await wakeLock.release();
+        wakeLock = null;
+        console.log('Wake Lock has been released.');
+    }
+}
+
+// Request the wake lock when the page is loaded
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        await requestWakeLock();
+    } else {
+        await releaseWakeLock();
+    }
+});
+
         startButton.addEventListener('click', startTimer);
         pauseButton.addEventListener('click', pauseTimer);
         resetButton.addEventListener('click', resetTimer);
