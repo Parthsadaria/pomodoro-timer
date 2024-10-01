@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,6 +55,11 @@
         .colon {
             width: 0.5ch;
             text-align: center;
+        }
+        .am-pm {
+margin-top:50px;
+	color : grey;
+            font-size: 1.5rem;
         }
         .burger-menu {
             position: absolute;
@@ -131,14 +135,13 @@
             font-size: 1.2rem;
             font-weight: 400;
         }
-.fullscreen-button {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    cursor: pointer;
-    z-index: 1000;
-}
-
+        .fullscreen-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            cursor: pointer;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -149,6 +152,7 @@
         <span class="colon">:</span>
         <div class="digit-wrapper"><div class="digit">0</div></div>
         <div class="digit-wrapper"><div class="digit">0</div></div>
+        <span id="am-pm" class="am-pm"></span>
     </div>
     <div class="burger-menu">
         <div class="burger-icon">
@@ -166,16 +170,18 @@
             <span id="font-size-value">10rem</span>
             <button id="increase-font">+</button>
         </div>
+        <button id="toggle-mode">Switch to Clock</button>
     </div>
-<div class="fullscreen-button" onclick="toggleFullScreen()">
-    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M8 3H3v5m0 4v5h5M16 3h5v5m0 4v5h-5" />
-    </svg>
-</div>
+    <div class="fullscreen-button" onclick="toggleFullScreen()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H3v5m0 4v5h5M16 3h5v5m0 4v5h-5" />
+        </svg>
+    </div>
 
     <script>
         let timer;
         let timeLeft = 1500; // 25 minutes in seconds
+        let isPomodoroMode = true; // Mode toggle
         const timerDisplay = document.getElementById('timer');
         const startButton = document.getElementById('start');
         const pauseButton = document.getElementById('pause');
@@ -183,8 +189,10 @@
         const decreaseFontButton = document.getElementById('decrease-font');
         const increaseFontButton = document.getElementById('increase-font');
         const fontSizeValue = document.getElementById('font-size-value');
+        const toggleModeButton = document.getElementById('toggle-mode');
         const burgerMenu = document.querySelector('.burger-menu');
         const menu = document.querySelector('.menu');
+        const amPmDisplay = document.getElementById('am-pm');
 
         let fontSize = 10;
 
@@ -195,142 +203,124 @@
         }
 
         function updateDisplay() {
-            const newTime = formatTime(timeLeft);
-            const digitWrappers = timerDisplay.querySelectorAll('.digit-wrapper');
-            
-            newTime.split('').forEach((char, index) => {
-                if (char === ':') return; // Skip the colon
-                const wrapperIndex = index > 2 ? index - 1 : index;
-                const wrapper = digitWrappers[wrapperIndex];
-                const currentDigit = wrapper.querySelector('.digit');
-                if (currentDigit.textContent !== char) {
-                    animateDigit(wrapper, char);
-                }
-            });
+            if (isPomodoroMode) {
+                // Pomodoro mode
+                const newTime = formatTime(timeLeft);
+                const digitWrappers = timerDisplay.querySelectorAll('.digit-wrapper');
+                newTime.split('').forEach((char, index) => {
+                    if (char === ':') return;
+                    const wrapperIndex = index > 2 ? index - 1 : index;
+                    const wrapper = digitWrappers[wrapperIndex];
+                    const currentDigit = wrapper.querySelector('.digit');
+                    if (currentDigit.textContent !== char) {
+                        animateDigit(wrapper, char);
+                    }
+                });
+                amPmDisplay.textContent = ""; // No AM/PM in Pomodoro mode
+            } else {
+                // Clock mode
+                const now = new Date();
+                let hours = now.getHours();
+                const minutes = now.getMinutes();
+                const isAm = hours < 12;
+                hours = hours % 12 || 12; // Convert to 12-hour format
+                const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                
+                const digitWrappers = timerDisplay.querySelectorAll('.digit-wrapper');
+                formattedTime.split('').forEach((char, index) => {
+                    if (char === ':') return;
+                    const wrapperIndex = index > 2 ? index - 1 : index;
+                    const wrapper = digitWrappers[wrapperIndex];
+                    const currentDigit = wrapper.querySelector('.digit');
+                    if (currentDigit.textContent !== char) {
+                        animateDigit(wrapper, char);
+                    }
+                });
+                amPmDisplay.textContent = isAm ? 'AM' : 'PM'; // Display AM/PM
+            }
         }
 
         function animateDigit(wrapper, newChar) {
-            const oldDigit = wrapper.querySelector('.digit');
-            const newDigit = document.createElement('div');
-            newDigit.className = 'digit';
-            newDigit.textContent = newChar;
-            newDigit.style.transform = 'translateY(-100%)';
-            wrapper.appendChild(newDigit);
-
-            anime.timeline({
-                duration: 300,
-                easing: 'easeOutCubic'
-            })
-            .add({
-                targets: oldDigit,
-                translateY: '100%',
-                opacity: 0,
-                complete: function(anim) {
-                    oldDigit.remove();
-                }
-            })
-            .add({
-                targets: newDigit,
-                translateY: ['-100%', 0],
-                opacity: [0, 1]
-            }, '-=300');
+            const currentDigit = wrapper.querySelector('.digit');
+            anime({
+                targets: currentDigit,
+                translateY: ['0%', '100%'],
+                opacity: [1, 0],
+                easing: 'easeInQuad',
+                duration: 200,
+                complete: function() {
+                    currentDigit.textContent = newChar;
+                    anime({
+                        targets: currentDigit,
+                        translateY: ['-100%', '0%'],
+                        opacity: [0, 1],
+                        easing: 'easeOutQuad',
+                        duration: 200,
+                    });
+                },
+            });
         }
 
-        function startTimer() {
+        startButton.addEventListener('click', () => {
             if (!timer) {
                 timer = setInterval(() => {
-                    if (timeLeft > 0) {
-                        timeLeft--;
-                        updateDisplay();
-                    } else {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
                         clearInterval(timer);
                         timer = null;
-                        alert('Pomodoro session completed!');
                     }
+                    updateDisplay();
                 }, 1000);
-                startButton.disabled = true;
-                pauseButton.disabled = false;
             }
-        }
+        });
 
-        function pauseTimer() {
-            if (timer) {
-                clearInterval(timer);
-                timer = null;
-                startButton.disabled = false;
-                pauseButton.disabled = true;
-            }
-        }
-
-        function resetTimer() {
+        pauseButton.addEventListener('click', () => {
             clearInterval(timer);
             timer = null;
-            timeLeft = 1500;
-            updateDisplay();
-            startButton.disabled = false;
-            pauseButton.disabled = false;
-        }
+        });
 
-        function updateFontSize(change) {
-            fontSize += change;
-            fontSize = Math.max(3, Math.min(fontSize, 100)); // Limit font size between 5rem and 20rem
+        resetButton.addEventListener('click', () => {
+            clearInterval(timer);
+            timer = null;
+            timeLeft = 1500; // Reset to 25 minutes
+            updateDisplay();
+        });
+
+        decreaseFontButton.addEventListener('click', () => {
+            fontSize -= 1;
+            if (fontSize < 5) fontSize = 5; // Minimum font size
             timerDisplay.style.fontSize = `${fontSize}rem`;
             fontSizeValue.textContent = `${fontSize}rem`;
-        }
-
-        function toggleMenu() {
-            menu.classList.toggle('open');
-            const spans = document.querySelectorAll('.burger-icon span');
-            spans.forEach(span => span.classList.toggle('open'));
-        }
-function toggleFullScreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
         });
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
+
+        increaseFontButton.addEventListener('click', () => {
+            fontSize += 1;
+            if (fontSize > 50) fontSize = 50; // Maximum font size
+            timerDisplay.style.fontSize = `${fontSize}rem`;
+            fontSizeValue.textContent = `${fontSize}rem`;
+        });
+
+        toggleModeButton.addEventListener('click', () => {
+            isPomodoroMode = !isPomodoroMode;
+            toggleModeButton.textContent = isPomodoroMode ? "Switch to Clock" : "Switch to Pomodoro";
+            updateDisplay();
+        });
+
+        burgerMenu.addEventListener('click', () => {
+            menu.classList.toggle('open');
+        });
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
         }
-    }
-}
 
-let wakeLock = null;
-
-async function requestWakeLock() {
-    try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        console.log('Wake Lock is active.');
-    } catch (err) {
-        console.error(`${err.name}, ${err.message}`);
-    }
-}
-
-async function releaseWakeLock() {
-    if (wakeLock !== null) {
-        await wakeLock.release();
-        wakeLock = null;
-        console.log('Wake Lock has been released.');
-    }
-}
-
-// Request the wake lock when the page is loaded
-document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible') {
-        await requestWakeLock();
-    } else {
-        await releaseWakeLock();
-    }
-});
-
-        startButton.addEventListener('click', startTimer);
-        pauseButton.addEventListener('click', pauseTimer);
-        resetButton.addEventListener('click', resetTimer);
-        decreaseFontButton.addEventListener('click', () => updateFontSize(-1));
-        increaseFontButton.addEventListener('click', () => updateFontSize(1));
-        burgerMenu.addEventListener('click', toggleMenu);
-
-        updateDisplay();
+        updateDisplay(); // Initial display
     </script>
 </body>
 </html>
